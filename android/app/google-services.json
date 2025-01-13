@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "156337252426",
+    "project_id": "findyourphone-aa9e9",
+    "storage_bucket": "findyourphone-aa9e9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:156337252426:android:a2a7e65f99d9a51d06deb3",
+        "android_client_info": {
+          "package_name": "com.kms.findyourphone"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCZjMfBpvjfa485wYNc3xJ91vMHlm9E5Gk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
