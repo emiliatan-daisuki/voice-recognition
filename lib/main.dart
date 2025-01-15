@@ -36,7 +36,30 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: LoginScreen(),
+      home: InitialScreen(),
+    );
+  }
+}
+
+// 자동 로그인 처리 화면
+class InitialScreen extends StatelessWidget {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<User?>(
+      future: _auth.currentUser != null ? Future.value(_auth.currentUser) : _auth.authStateChanges().first,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasData) {
+          // 이미 로그인된 사용자라면 바로 이름 인식 앱 화면으로 이동
+          return NameRecognitionApp();
+        } else {
+          // 로그인되지 않은 사용자라면 로그인 화면으로 이동
+          return LoginScreen();
+        }
+      },
     );
   }
 }
@@ -268,8 +291,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
 }
 
 
-
-// 이름 인식 앱
 // 이름 인식 앱
 class NameRecognitionApp extends StatefulWidget {
   @override
