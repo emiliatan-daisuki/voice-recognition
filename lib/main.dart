@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
@@ -122,7 +123,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _confirmPasswordController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // 인증 상태 변수
   bool _isEmailVerified = false;
   String? _passwordError;
   String? _confirmPasswordError;
@@ -153,6 +153,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
         setState(() {
           _isEmailVerified = false;  // 인증이 아직 완료되지 않았음
         });
+
+        // 이메일 인증을 확인하는 타이머 시작
+        _checkEmailVerification();
       } else {
         Fluttertoast.showToast(msg: "이미 인증된 이메일입니다.");
         setState(() {
@@ -161,6 +164,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
       }
     } catch (e) {
       Fluttertoast.showToast(msg: "이메일 인증 실패: $e");
+    }
+  }
+
+  // 이메일 인증 상태를 주기적으로 확인하는 함수
+  Future<void> _checkEmailVerification() async {
+    User? user = _auth.currentUser;
+    if (user != null) {
+      // 일정 시간마다 이메일 인증 상태를 확인
+      Timer.periodic(Duration(seconds: 5), (timer) async {
+        await user.reload(); // 사용자 정보를 새로고침
+        if (user.emailVerified) {
+          timer.cancel();  // 인증이 완료되면 타이머 종료
+          setState(() {
+            _isEmailVerified = true; // 인증 완료
+          });
+          Fluttertoast.showToast(msg: "이메일 인증이 완료되었습니다.");
+        }
+      });
     }
   }
 
@@ -249,6 +270,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
 
 // 이름 인식 앱
+// 이름 인식 앱
 class NameRecognitionApp extends StatefulWidget {
   @override
   _NameRecognitionAppState createState() => _NameRecognitionAppState();
@@ -276,6 +298,7 @@ class _NameRecognitionAppState extends State<NameRecognitionApp> {
     if (status.isDenied) {
       await _tts.speak("마이크 권한이 필요합니다.");
     }
+    print("마이크 권한 상태: $status");
   }
 
   // Firestore에서 이름 가져오기
@@ -287,34 +310,40 @@ class _NameRecognitionAppState extends State<NameRecognitionApp> {
         setState(() {
           _savedName = snapshot.get('name');
         });
+        print("저장된 이름: $_savedName");
       }
     } catch (e) {
-      print("Firestore error: $e");
+      print("Firestore 오류: $e");
       await _tts.speak("Firestore에 접근할 수 없습니다.");
     }
   }
 
   // 음성 인식 시작
   Future<void> _startListening() async {
-    if (_isListening) return;
+    if (_isListening) {
+      print("음성 인식 이미 진행 중입니다.");
+      return;
+    }
 
     bool available = await _speech.initialize();
     if (available) {
       setState(() => _isListening = true);
+      print("음성 인식 시작");
+
       _speech.listen(onResult: (result) async {
         _recognizedText = result.recognizedWords;
-        if (_recognizedText.toLowerCase() == "이름지정") {
-          await _tts.speak("이름을 지정해주세요.");
-          _speech.stop();
-          setState(() => _isListening = false);
+        print("인식된 텍스트: $_recognizedText");
 
-          // 새 이름 지정
-          _speech.listen(onResult: (result) async {
-            _recognizedText = result.recognizedWords;
+        // 이름 지정 명령어 처리
+        if (_recognizedText.toLowerCase().startsWith("이름 지정")) {
+          String newName = _recognizedText.substring(5).trim(); // '이름 지정' 이후의 텍스트 추출
+
+          if (newName.isNotEmpty) {
             setState(() {
-              _savedName = _recognizedText;
+              _savedName = newName;
             });
 
+            // Firestore에 새로운 이름 저장
             await _firestore.collection('names').doc('user_name').set({
               'name': _savedName,
             });
@@ -322,11 +351,19 @@ class _NameRecognitionAppState extends State<NameRecognitionApp> {
             await _tts.speak("이름이 $_savedName 로 저장되었습니다.");
             _speech.stop();
             setState(() => _isListening = false);
-          });
+            print("이름 저장 완료: $_savedName");
+          } else {
+            await _tts.speak("이름을 정확히 말해주세요.");
+            _speech.stop();
+            setState(() => _isListening = false);
+          }
         } else if (_recognizedText.toLowerCase() == _savedName?.toLowerCase()) {
           await _tts.speak("네, 부르셨나요?");
+          print("이름 인식됨: $_savedName");
         }
       });
+    } else {
+      print("음성 인식 초기화 실패");
     }
   }
 
@@ -334,6 +371,7 @@ class _NameRecognitionAppState extends State<NameRecognitionApp> {
   void _stopListening() {
     _speech.stop();
     setState(() => _isListening = false);
+    print("음성 인식 중지됨");
   }
 
   @override
