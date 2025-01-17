@@ -46,9 +46,13 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-    <string>We need access to your microphone for speech recognition.</string>
-    <key>NSSpeechRecognitionUsageDescription</key>
-    <string>We need access to speech recognition.</string>
+    <string>마이크 사용을 허용하십시오.</string>
+    <key>UIBackgroundModes</key>
+    <array>
+      <string>fetch</string>
+      <string>remote-notification</string>
+    </array>
+
 
 </dict>
 </plist>
